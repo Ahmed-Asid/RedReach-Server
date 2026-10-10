@@ -87,6 +87,10 @@ app.get("/auth/me", async (req, res) => {
 // START SERVER
 // ======================================================
 
+async function startServer() {
+    try {
+        await client.connect();
+        console.log("Connected to MongoDB Atlas!");
 
         const database = client.db("red-reach");
         const usersCollection = database.collection("user");
@@ -153,23 +157,6 @@ app.get("/auth/me", async (req, res) => {
             const result = await requestCollection.findOne(query);
             console.log("Found request:", result);
             res.send(result);
-        })
-
-        app.patch("/api/users/:id", async(req, res) => {
-            
-            const { id } = req.params;
-            const data = req.body;
-            
-            const result = await usersCollection.updateOne(
-                { _id: new ObjectId(id) },
-                {
-                    $set: {
-                            ...data,
-                            updatedDate: new Date(),
-                          },
-                }
-            );
-            res.send(result)
         })
 
         app.post("/api/donation-requests", async(req, res) => {
@@ -262,7 +249,7 @@ app.get("/auth/me", async (req, res) => {
 
 
 
-app.post(
+    app.post(
     "/api/upload-image",
     express.raw({
         type: ["image/jpeg", "image/png", "image/webp"],
@@ -316,10 +303,13 @@ app.post(
             });
         }
     }
-);
-
+    );
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+            console.log(`Server listening on port ${port}`);
+        });
+    } catch (error) {
+        console.error("Failed to connect to MongoDB", error);
+    }
+}
 
-module.exports = app;
+startServer();
