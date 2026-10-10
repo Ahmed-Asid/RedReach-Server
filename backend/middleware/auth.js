@@ -25,15 +25,15 @@ async function requireAuth(req, res, next) {
     }
 }
 
-function requireActiveUser(req, res, next) {
-    if (req.user.status !== "active") {
-        return res.status(403).json({
-            message: "Your account is blocked.",
-        });
-    }
+// function requireActiveUser(req, res, next) {
+//     if (req.user.status !== "active") {
+//         return res.status(403).json({
+//             message: "Your account is blocked.",
+//         });
+//     }
 
-    next();
-}
+//     next();
+// }
 
 function requireRole(...roles) {
     return (req, res, next) => {
@@ -49,6 +49,6 @@ function requireRole(...roles) {
 
 module.exports = {
     requireAuth,
-    requireActiveUser,
+    // requireActiveUser,
     requireRole,
 };

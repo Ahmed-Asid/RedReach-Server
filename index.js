@@ -87,9 +87,6 @@ app.get("/auth/me", async (req, res) => {
 // START SERVER
 // ======================================================
 
-async function run() {
-    try {
-        await client.connect();
 
         const database = client.db("red-reach");
         const usersCollection = database.collection("user");
@@ -163,7 +160,7 @@ async function run() {
             const { id } = req.params;
             const data = req.body;
             
-            const result = await requestCollection.updateOne(
+            const result = await usersCollection.updateOne(
                 { _id: new ObjectId(id) },
                 {
                     $set: {
@@ -212,29 +209,58 @@ async function run() {
             res.send(result);
         });
 
+        app.get("/api/donors/search", async (req, res) => {
+        try {
+        const {
+            bloodGroup,
+            district,
+            upazila,
+        } = req.query;
 
 
-        // Test MongoDB connection
-        await database.command({ ping: 1 });
+        const query = {
+            role: "donor",
+            status: "active",
+        };
 
-        console.log(
-            "Successfully connected to MongoDB!"
-        );
 
-        app.listen(port, () => {
-            console.log(
-                `RedReach server running on http://localhost:${port}`
-            );
-        });
+        if (bloodGroup) {
+            query.bloodGroup = bloodGroup;
+        }
+
+        if (district) {
+            query.district = district;
+        }
+
+        if (upazila) {
+            query.upazila = upazila;
+        }
+
+
+        const cursor = usersCollection.find(query);
+
+
+        const donors = await cursor
+            .project({
+                password: 0,
+            })
+            .toArray();
+
+
+        res.send(donors);
+
+
     } catch (error) {
-        console.error(
-            "Failed to start RedReach server:",
-            error
-        );
-    }
-}
 
-run();
+        console.error("Donor search error:", error);
+
+        res.status(500).send({
+            message: "Failed to search donors"
+        });
+        }
+    });
+
+
 
 app.post(
     "/api/upload-image",
