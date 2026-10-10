@@ -26,12 +26,25 @@ const client = new MongoClient(uri, {
   }
 });
 
-async function run() {
-  try {
+let db;
+
+async function connectDB() {
+    if (db) return db;
+
     await client.connect();
+
     console.log("Connected to MongoDB Atlas!");
 
-    const db = client.db('red-reach');
+    db = client.db("red-reach");
+
+    return db;
+}
+
+async function run() {
+  try {
+
+    const db = await connectDB();
+    
     const usersCollection = db.collection('user');
     const requestCollection = db.collection('requests');
 
@@ -170,6 +183,12 @@ async function run() {
 
 run().catch(console.dir);
 
-app.listen(port, () => {
-    console.log(`server is running on port ${port}`);
-});
+module.exports = app;
+
+
+// only for local development
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`server is running on port ${port}`);
+    });
+}
