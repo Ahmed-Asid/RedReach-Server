@@ -1,3 +1,6 @@
+const dns = require("node:dns");
+dns.setServers(["8.8.8.8","8.8.4.4"]);
+
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -89,8 +92,8 @@ app.get("/auth/me", async (req, res) => {
 
 async function startServer() {
     try {
-        await client.connect();
-        console.log("Connected to MongoDB Atlas!");
+        // await client.connect();
+        // console.log("Connected to MongoDB Atlas!");
 
         const database = client.db("red-reach");
         const usersCollection = database.collection("user");
@@ -304,12 +307,14 @@ async function startServer() {
         }
     }
     );
-app.listen(port, () => {
-            console.log(`Server listening on port ${port}`);
-        });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } catch (error) {
-        console.error("Failed to connect to MongoDB", error);
+    console.log(error)
     }
-}
+    }
 
-startServer();
+    run().catch(console.dir);
+
+    app.listen(port, () => {
+    console.log(`server is running on port ${port}`);
+    })  
