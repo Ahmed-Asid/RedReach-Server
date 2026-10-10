@@ -18,6 +18,19 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.use(async (req, res, next) => {
+    try {
+        await client.connect();
+        next();
+    } catch (error) {
+        console.error("Mongo connection error:", error);
+
+        res.status(500).json({
+            message: "Database connection failed"
+        });
+    }
+});
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -39,21 +52,21 @@ async function connectDB() {
 
     return db;
 }
+// ==========================================
+// BASIC ROUTE
+// ==========================================
+app.get('/', (req, res) => {
+    res.json({ message: "RedReach API is running!" });
+});
 
 async function run() {
   try {
 
     const db = await connectDB();
-    
+
     const usersCollection = db.collection('user');
     const requestCollection = db.collection('requests');
 
-    // ==========================================
-    // BASIC ROUTE
-    // ==========================================
-    app.get('/', (req, res) => {
-        res.json({ message: "RedReach API is running!" });
-    });
 
     // ==========================================
     // USERS ROUTES
@@ -185,9 +198,7 @@ run().catch(console.dir);
 
 module.exports = app;
 
-
-// only for local development
-if (require.main === module) {
+if (process.env.NODE_ENV !== "production") {
     app.listen(port, () => {
         console.log(`server is running on port ${port}`);
     });
