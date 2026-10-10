@@ -102,6 +102,36 @@ async function run() {
             res.send(users);
         })
 
+        app.get("/api/users/:id", async(req, res) => {
+
+            const id = req.params.id;
+            const query = {
+                _id : new ObjectId(id)
+            }
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.patch("/api/users/:id", async(req, res) => {
+            
+            const { id } = req.params;
+            
+            console.log(id)
+            const data = req.body;
+            
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                {
+                    $set: {
+                            ...data,
+                            updatedDate: new Date(),
+                          },
+                }
+            );
+            console.log(result)
+            res.send(result)
+        })
+
         app.get("/api/donation-requests", async(req, res) => {
             const cursor = requestCollection.find();
             const requests = await cursor.toArray();
@@ -126,6 +156,23 @@ async function run() {
             const result = await requestCollection.findOne(query);
             console.log("Found request:", result);
             res.send(result);
+        })
+
+        app.patch("/api/users/:id", async(req, res) => {
+            
+            const { id } = req.params;
+            const data = req.body;
+            
+            const result = await requestCollection.updateOne(
+                { _id: new ObjectId(id) },
+                {
+                    $set: {
+                            ...data,
+                            updatedDate: new Date(),
+                          },
+                }
+            );
+            res.send(result)
         })
 
         app.post("/api/donation-requests", async(req, res) => {
