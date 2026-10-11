@@ -66,6 +66,7 @@ async function run() {
 
     const usersCollection = db.collection('user');
     const requestCollection = db.collection('requests');
+    const fundCollection = db.collection('donations')
 
 
     // ==========================================
@@ -132,6 +133,28 @@ async function run() {
         const id = req.params.id;
         const result = await requestCollection.deleteOne({ _id: new ObjectId(id) });
         res.send(result);
+    });
+
+    app.get('/api/donations', async (req, res) => {
+        try {
+            const donations = await fundCollection.find().sort({ createdAt: -1 }).toArray();
+            res.send(donations);
+        } catch (error) {
+            res.status(500).send({ message: "Failed to fetch donations" });
+        }
+    });
+
+    app.post('/api/donations', async (req, res) => {
+        try {
+            const donationData = {
+                ...req.body,
+                createdAt: new Date()
+            };
+            const result = await fundCollection.insertOne(donationData);
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ message: "Failed to save donation" });
+        }
     });
 
     // ==========================================
