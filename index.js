@@ -5,6 +5,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dotenv.config();
 
@@ -59,6 +60,45 @@ app.get('/', (req, res) => {
     res.json({ message: "RedReach API is running!" });
 });
 
+const JWKS = createRemoteJWKSet(new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`))
+
+const verifyToken = async (req, res, next) => {
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")){
+        res.status(401).send({msg: 'Unauthorized'})
+    }
+
+    const token = authHeader.split(" ")[1];
+    if (!token){
+        res.status(401).send({msg: 'Unauthorized'})
+    }
+
+    try{
+        const {payload} = await jwtVerify(token, JWKS);
+        req.user = payload;
+        console.log(payload);
+        next()
+    } catch(error){
+        console.log(error)
+        res.status(401).send({msg: 'Unauthorized'})
+    }
+}
+
+const verifyAdmin = async (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).send({ message: 'forbidden access' })
+    }
+    next();
+}
+
+const verifyDonor = async (req, res, next) => {
+    if (req.user.role !== 'donor') {
+        return res.status(403).send({ message: 'forbidden access' })
+    }
+    next();
+}
+
 async function run() {
   try {
 
@@ -72,18 +112,20 @@ async function run() {
     // ==========================================
     // USERS ROUTES
     // ==========================================
-    app.get('/api/users', async (req, res) => {
+    app.get('/api/users', verifyToken, verifyAdmin, async (req, res) => {
         const users = await usersCollection.find().toArray();
         res.send(users);
     });
 
-    app.get('/api/users/:id', async (req, res) => {
-        const id = req.params.id;
-        const result = await usersCollection.findOne({ _id: new ObjectId(id) });
-        res.send(result);
-    });
+    app.get('/api/users/:id', verifyToken, async(req, res) => {
+        const id = req.params.id
+        console.log(user,'user')
+        const result = await usersCollection.findOne(
+            { _id: new ObjectId(id) })
+            res.send(result)
+    })
 
-    app.patch('/api/users/:id', async (req, res) => {
+    app.patch('/api/users/:id', verifyToken, async (req, res) => {
         const id = req.params.id;
         const userData = req.body;
         const result = await usersCollection.updateOne(
@@ -101,25 +143,25 @@ async function run() {
         res.send(requests);
     });
 
-    app.get('/api/donation-requests/user/:userID', async (req, res) => {
-        const id = req.params.userID;
-        const result = await requestCollection.find({ requesterId: id }).toArray();
+    app.get('/api/donation-requests/my-requests', verifyToken, async (req, res) => {
+        const user = req.user;
+        const result = await requestCollection.find({ requesterId: user.id }).toArray();
         res.send(result);
     });
 
-    app.get('/api/donation-requests/details/:id', async (req, res) => {
+    app.get('/api/donation-requests/details/:id', verifyToken, async (req, res) => {
         const id = req.params.id;
         const result = await requestCollection.findOne({ _id: new ObjectId(id) });
         res.send(result);
     });
 
-    app.post('/api/donation-requests', async (req, res) => {
+    app.post('/api/donation-requests', verifyToken, async (req, res) => {
         const newRequest = { ...req.body, updatedDate: new Date() };
         const result = await requestCollection.insertOne(newRequest);
         res.json(result);
     });
 
-    app.patch('/api/donation-requests/:id', async (req, res) => {
+    app.patch('/api/donation-requests/:id', verifyToken, async (req, res) => {
         const id = req.params.id;
         const updatedData = req.body;
         const result = await requestCollection.updateOne(
@@ -129,7 +171,7 @@ async function run() {
         res.send(result);
     });
 
-    app.delete('/api/donation-requests/:id', async (req, res) => {
+    app.delete('/api/donation-requests/:id', verifyToken, async (req, res) => {
         const id = req.params.id;
         const result = await requestCollection.deleteOne({ _id: new ObjectId(id) });
         res.send(result);
@@ -144,7 +186,7 @@ async function run() {
         }
     });
 
-    app.post('/api/donations', async (req, res) => {
+    app.post('/api/donations', verifyToken, async (req, res) => {
         try {
             const donationData = {
                 ...req.body,
