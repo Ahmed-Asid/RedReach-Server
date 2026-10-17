@@ -56,24 +56,21 @@ async function connectDB() {
 // ==========================================
 // BASIC ROUTE
 // ==========================================
-app.get('/', (req, res) => {
-    res.json({ message: "RedReach API is running!" });
-});
 
 const JWKS = createRemoteJWKSet(new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`))
 
 const verifyToken = async (req, res, next) => {
-
+    
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")){
         res.status(401).send({msg: 'Unauthorized'})
     }
-
+    
     const token = authHeader.split(" ")[1];
     if (!token){
         res.status(401).send({msg: 'Unauthorized'})
     }
-
+    
     try{
         const {payload} = await jwtVerify(token, JWKS);
         req.user = payload;
@@ -98,6 +95,10 @@ const verifyDonor = async (req, res, next) => {
     }
     next();
 }
+
+app.get('/', (req, res) => {
+    res.json({ message: "RedReach API is running!" });
+});
 
 async function run() {
   try {
